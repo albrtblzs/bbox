@@ -4,6 +4,9 @@ Laravel 12 API, TypeScript/Fastify validator, and PostgreSQL assignment.
 
 Work is tracked in the [Payment Ledger project](https://github.com/users/albrtblzs/projects/4).
 
+New to PHP or Laravel? Read the [step-by-step learning guide](docs/learning/README.md) for the planning rationale,
+PHP basics, request flow, database design, idempotency, concurrency and practical exercises.
+
 ## Development workflow
 
 - Keep `master` as the integration branch.
