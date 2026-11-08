@@ -1,0 +1,33 @@
+name: Ledger checks
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and start services
+        run: docker compose up --build -d --wait
+      - name: Create isolated test database
+        run: docker compose exec -T database createdb -U ledger ledger_test
+      - name: Backend tests including concurrent processes
+        run: docker compose exec -T backend php artisan test
+      - name: PHP style
+        run: docker compose exec -T backend vendor/bin/pint --test app bootstrap/app.php bootstrap/providers.php routes tests database/migrations
+      - name: Validator tests, types and build
+        run: |
+          docker compose exec -T validator npm test
+          docker compose exec -T validator npm run typecheck
+          docker compose exec -T validator npm run build
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+      - name: Stop services
+        if: always()
+        run: docker compose down
