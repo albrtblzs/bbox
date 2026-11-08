@@ -26,7 +26,7 @@ docker compose up --build -d --wait
 
 The API is available at http://localhost:8000; its health endpoint is `/up`.
 The validator's `/health` endpoint and PostgreSQL are available only inside the Compose network.
-Both services are currently skeletons; ledger endpoints and validation rules are tracked in subsequent issues.
+Merchant creation and retrieval are available; transaction endpoints and validator rules are tracked in subsequent issues.
 
 Startup generates a container-local Laravel key and runs migrations after PostgreSQL is healthy.
 PostgreSQL data persists in a named volume. `docker compose down` stops the services without deleting data.
@@ -60,3 +60,25 @@ Transaction amounts range from 1 to 2,147,483,647; the validator will impose a l
 Transactions contain a `balance_after` snapshot for replaying the original successful response.
 PostgreSQL enforces amounts, balance bounds, transaction types, matching merchant currency, and merchant-scoped idempotency-key uniqueness.
 Merchant deletion is restricted while ledger entries reference it.
+
+## Merchant API
+
+Create a merchant with a name (1–255 characters after trimming) and uppercase EUR, USD, or HUF currency.
+The initial balance is always zero; clients cannot supply a starting balance.
+
+```sh
+curl -X POST http://localhost:8000/api/merchants \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"Example Shop","currency":"EUR"}'
+curl http://localhost:8000/api/merchants/1
+```
+
+Creation returns HTTP 201 and retrieval HTTP 200. Both use the same response shape:
+
+```json
+{"data":{"id":1,"name":"Example Shop","currency":"EUR","balance":0,"created_at":"2026-11-08T00:00:00.000000Z","updated_at":"2026-11-08T00:00:00.000000Z"}}
+```
+
+API errors are JSON even without an Accept header. Invalid input returns HTTP 422 with
+`error.code: INVALID_INPUT`, `error.message`, and field errors in `error.details`.
+Missing merchants return HTTP 404 with `error.code: NOT_FOUND` and `error.message`.
