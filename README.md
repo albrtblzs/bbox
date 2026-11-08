@@ -26,7 +26,7 @@ docker compose up --build -d --wait
 
 The API is available at http://localhost:8000; its health endpoint is `/up`.
 The validator's `/health` endpoint and PostgreSQL are available only inside the Compose network.
-Merchant creation, retrieval, and transaction posting are available. Transaction history is tracked in issue #6.
+Merchant creation, retrieval, transaction posting and transaction history are available.
 
 Startup generates a container-local Laravel key and runs migrations after PostgreSQL is healthy.
 PostgreSQL data persists in a named volume. `docker compose down` stops the services without deleting data.
@@ -103,3 +103,9 @@ An approved request locks the merchant row, rechecks the key, and inserts the tr
 Refunds with insufficient balance return 422 `INSUFFICIENT_FUNDS`; unsafe balance growth returns 422 `BALANCE_LIMIT_EXCEEDED`.
 Validator rejection returns 422 `VALIDATOR_REJECTED`; outages, non-success responses and invalid decision bodies return 503 `VALIDATOR_UNAVAILABLE`.
 Validation logs contain a generated correlation ID, latency and outcome, without request bodies.
+
+## Transaction history
+
+`GET /api/merchants/{id}/transactions?page=1` returns only that merchant's entries, newest first by creation time then ID.
+Pages contain at most 20 entries using the same transaction resource as posting, plus Laravel `links` and `meta` pagination fields.
+`page` must be a positive integer up to 2,147,483,647. Empty histories and pages beyond the last page return an empty `data` array.
