@@ -10,7 +10,7 @@ Work is tracked in the [Payment Ledger project](https://github.com/users/albrtbl
 - Before starting an issue, create `feature/<issue-number>-<short-name>` and move the issue to In Progress.
 - Implement and verify only that issue's scope.
 - Open a pull request targeting `master` with `Closes #<issue-number>` and validation evidence.
-- Keep issues In Progress until their pull requests are merged. Do not merge without review.
+- Keep issues In Progress until their pull requests are merged. Squash-merge automatically after relevant checks pass, as authorized by the repository owner.
 
 See the repository issues for the implementation plan and acceptance criteria.
 
@@ -33,7 +33,7 @@ PostgreSQL data persists in a named volume. `docker compose down` stops the serv
 The PHP development server and example database credentials are intended for this local assignment.
 
 Optionally copy `.env.example` to `.env` to change the exposed API port or validator limit settings.
-The limits will become active when the validation rules are implemented in issue #4.
+The limits are positive integer minor-unit amounts, defaulting to 1,000,000 per currency. Invalid settings fail validator startup.
 
 ## Checks
 
