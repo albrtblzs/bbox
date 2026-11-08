@@ -37,6 +37,12 @@ The limits will become active when the validation rules are implemented in issue
 
 ## Checks
 
+Create the dedicated test database once (the test suite resets this database):
+
+```sh
+docker compose exec database createdb -U ledger ledger_test
+```
+
 ```sh
 docker compose exec backend php artisan test
 docker compose exec validator npm test
@@ -45,3 +51,12 @@ docker compose exec validator npm run build
 ```
 
 Dependency lockfiles are committed. Dependencies are installed inside images; do not commit `vendor`, `node_modules`, `.env`, logs, or generated build files.
+
+## Ledger storage
+
+Merchants have one immutable EUR/USD/HUF currency and an integer balance in hundredths of that currency.
+Balances range from 0 to 9,007,199,254,740,991 (the largest exact JavaScript integer).
+Transaction amounts range from 1 to 2,147,483,647; the validator will impose a lower configurable business limit.
+Transactions contain a `balance_after` snapshot for replaying the original successful response.
+PostgreSQL enforces amounts, balance bounds, transaction types, matching merchant currency, and merchant-scoped idempotency-key uniqueness.
+Merchant deletion is restricted while ledger entries reference it.
