@@ -26,7 +26,7 @@ docker compose up --build -d --wait
 
 The API is available at http://localhost:8000; its health endpoint is `/up`.
 The validator's `/health` endpoint and PostgreSQL are available only inside the Compose network.
-Merchant creation and retrieval are available; transaction endpoints and validator rules are tracked in subsequent issues.
+Merchant creation, retrieval, and transaction posting are available. Transaction history is tracked in issue #6.
 
 Startup generates a container-local Laravel key and runs migrations after PostgreSQL is healthy.
 PostgreSQL data persists in a named volume. `docker compose down` stops the services without deleting data.
@@ -82,3 +82,24 @@ Creation returns HTTP 201 and retrieval HTTP 200. Both use the same response sha
 API errors are JSON even without an Accept header. Invalid input returns HTTP 422 with
 `error.code: INVALID_INPUT`, `error.message`, and field errors in `error.details`.
 Missing merchants return HTTP 404 with `error.code: NOT_FOUND` and `error.message`.
+
+## Post a transaction
+
+```sh
+curl -X POST http://localhost:8000/api/merchants/1/transactions \
+  -H 'Content-Type: application/json' -H 'Idempotency-Key: payment-001' \
+  -d '{"type":"payment","amount":10000,"currency":"EUR"}'
+```
+
+Use `refund` to debit the available balance. Amount must be a positive JSON integer; strings and fractions are rejected.
+The required header accepts 1–128 letters, digits, `.`, `_`, `:`, or `-`.
+HTTP 201 returns `data` with the transaction ID, merchant ID, type, amount, currency, `balance_after`, and UTC timestamps.
+An identical key/input replays that original body and 201 status even if the validator is down.
+A changed valid input for an existing key returns 409 `IDEMPOTENCY_CONFLICT`.
+Only successful transactions reserve keys. After a 503, retry with the same key.
+
+The validator is called outside the database transaction with a two-second timeout, no redirects, and no automatic retries.
+An approved request locks the merchant row, rechecks the key, and inserts the transaction and updates the balance in one transaction.
+Refunds with insufficient balance return 422 `INSUFFICIENT_FUNDS`; unsafe balance growth returns 422 `BALANCE_LIMIT_EXCEEDED`.
+Validator rejection returns 422 `VALIDATOR_REJECTED`; outages, non-success responses and invalid decision bodies return 503 `VALIDATOR_UNAVAILABLE`.
+Validation logs contain a generated correlation ID, latency and outcome, without request bodies.
