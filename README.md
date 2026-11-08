@@ -109,3 +109,14 @@ Validation logs contain a generated correlation ID, latency and outcome, without
 `GET /api/merchants/{id}/transactions?page=1` returns only that merchant's entries, newest first by creation time then ID.
 Pages contain at most 20 entries using the same transaction resource as posting, plus Laravel `links` and `meta` pagination fields.
 `page` must be a positive integer up to 2,147,483,647. Empty histories and pages beyond the last page return an empty `data` array.
+
+## Test strategy and CI
+
+`php artisan test` uses Pest and runs the existing PHPUnit feature tests plus Pest concurrency scenarios.
+All database tests explicitly select `ledger_test`. The concurrency suite launches two separate PHP HTTP kernels
+and synchronizes both validator responses before allowing posting, exercising actual PostgreSQL row locks.
+It covers duplicate payments, conflicting payloads sharing a key, and competing full-balance refunds.
+The feature suite also injects a database update failure to prove the transaction insert rolls back.
+Run the suite sequentially; its dedicated database is reset during tests.
+
+GitHub Actions runs Docker startup, backend tests (including races), PHP style, and validator tests/types/build on PRs to `master` and pushes to `master`.

@@ -10,6 +10,8 @@ RUN composer install --no-interaction --prefer-dist --no-progress \
     && chmod +x docker-entrypoint.sh \
     && cp .env.example .env \
     && chown www-data:www-data .env \
+    && mkdir -p vendor/pestphp/pest-plugin-mutate/.temp \
+    && chown -R www-data:www-data vendor/pestphp/pest-plugin-mutate/.temp \
     && chown -R www-data:www-data storage bootstrap/cache
 USER www-data
 EXPOSE 8000
