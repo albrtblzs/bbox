@@ -1,0 +1,56 @@
+services:
+  database:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ledger
+      POSTGRES_USER: ledger
+      POSTGRES_PASSWORD: ledger
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ledger -d ledger"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  validator:
+    build: ./validator
+    environment:
+      MAX_AMOUNT_EUR: ${MAX_AMOUNT_EUR:-1000000}
+      MAX_AMOUNT_USD: ${MAX_AMOUNT_USD:-1000000}
+      MAX_AMOUNT_HUF: ${MAX_AMOUNT_HUF:-1000000}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  backend:
+    build: ./backend
+    ports:
+      - "${API_PORT:-8000}:8000"
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "false"
+      APP_URL: http://localhost:8000
+      DB_CONNECTION: pgsql
+      DB_HOST: database
+      DB_PORT: 5432
+      DB_DATABASE: ledger
+      DB_USERNAME: ledger
+      DB_PASSWORD: ledger
+      CACHE_STORE: array
+      SESSION_DRIVER: array
+      QUEUE_CONNECTION: sync
+      LOG_CHANNEL: stderr
+      VALIDATOR_URL: http://validator:3000
+    depends_on:
+      database:
+        condition: service_healthy
+      validator:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@file_get_contents('http://localhost:8000/up') === false ? 1 : 0);"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+volumes:
+  postgres-data:
