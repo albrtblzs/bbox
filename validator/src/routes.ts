@@ -1,11 +1,13 @@
 import type { FastifyPluginAsync } from 'fastify';
-import { check, type Limits } from './rules.js';
+import type { Limits } from './rules.ts';
+import { healthRoutes } from './routes/health.ts';
+import { validationRoutes } from './routes/validate.ts';
 
 export function createRoutes(limits: Limits): FastifyPluginAsync {
   const configuredLimits = { ...limits };
 
   return async function routes(app) {
-    app.get('/health', async () => ({ status: 'ok' }));
-    app.post('/validate', async request => check(request.body, configuredLimits));
+    app.register(healthRoutes);
+    app.register(validationRoutes, { limits: configuredLimits });
   };
 }

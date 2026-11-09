@@ -1,5 +1,5 @@
-import { buildApp } from './app.js';
-import { loadLimits } from './rules.js';
+import { buildApp } from './app.ts';
+import { loadLimits } from './rules.ts';
 
 const app = buildApp(loadLimits(process.env));
 await app.listen({ host: '0.0.0.0', port: 3000 });

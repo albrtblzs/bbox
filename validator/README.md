@@ -3,25 +3,29 @@
 The validator separates process startup, application construction, HTTP routes, and business rules.
 
 ```text
-server.ts -> buildApp(limits) -> createRoutes(limits) -> check(body, limits)
+server.ts -> buildApp(limits) -> application plugin
+    -> createRoutes(limits)
+        -> routes/health.ts
+        -> routes/validate.ts -> check(body, limits)
 ```
 
 - `server.ts` reads environment configuration, calls the application factory, opens port 3000, and handles shutdown.
-- `app.ts` exports `buildApp`, the application factory. Each call creates a fresh Fastify instance and registers its routes without opening a port.
-- `routes.ts` exports `createRoutes`, a route factory returning a Fastify plugin. It captures a copy of the supplied limits and registers `/health` and `/validate` when Fastify loads the plugin.
+- `app.ts` exports `buildApp`, the application factory, and `application`, a typed Fastify application plugin. Each factory call creates a fresh Fastify instance and supplies configuration to the application plugin without opening a port.
+- `routes.ts` exports `createRoutes`, a route factory returning a Fastify plugin. It captures a copy of the supplied limits and registers the endpoint plugins.
+- `routes/health.ts` registers `/health`; `routes/validate.ts` registers `/validate` and passes the unknown request body to the rules.
 - `rules.ts` contains configuration validation and the ordinary `check` function. It knows nothing about HTTP servers or databases.
 
 A factory is a function that creates an object or function with its dependencies supplied by the caller. Here, limits are passed explicitly rather than read from the environment inside request handlers. Tests can construct independently configured apps and use `app.inject()` without listening on a network port. Fastify loads registered plugins when `inject()`, `ready()`, or `listen()` is called. See the [Fastify plugin guide](https://fastify.dev/docs/latest/Guides/Plugins-Guide/).
 
-This structure gives future endpoints a clear home. Additional route groups can become separate plugins when needed. The current two routes share one plugin; additional controller classes or a dependency injection framework are unnecessary for these handlers.
+The [official Fastify demo](https://github.com/fastify/demo) organizes its application as a plugin with separate route modules. We use the same composition pattern with explicit registration. Its directory autoloading is useful for many route groups; these two endpoints do not need an additional dependency for discovery. Its authentication, database plugins, and input coercion settings serve a different API. Our validator preserves strict integer checks and its existing approval/rejection contract.
 
-## Why import app.js when the source is app.ts?
+## TypeScript imports and JavaScript output
 
 ```ts
-import { buildApp } from './app.js';
+import { buildApp } from './app.ts';
 ```
 
-The import names the file used by the compiled application. This project uses `"type": "module"` in `package.json` and `NodeNext` module settings in `tsconfig.json`.
+Source imports now name the TypeScript files directly. This project uses `"type": "module"`, `NodeNext` module settings, and `rewriteRelativeImportExtensions: true` in `tsconfig.json`.
 
 ```text
 Source                    npm run build              Runtime
@@ -31,10 +35,13 @@ src/routes.ts                                        dist/routes.js
 src/rules.ts                                         dist/rules.js
 ```
 
-During compilation, TypeScript resolves `./app.js` to the source `app.ts` for type checking. The emitted `dist/server.js` keeps `./app.js`, which resolves to `dist/app.js` when `npm start` runs `node dist/server.js`.
-Node's relative ESM imports require explicit file extensions. With this configuration, changing the import to `./app.ts` would name a file that the JavaScript build does not emit. See the [TypeScript module reference](https://www.typescriptlang.org/docs/handbook/modules/reference).
+The compiler rewrites the relative `./app.ts` import to `./app.js` in `dist/server.js`. Node then loads `dist/app.js`. This feature was introduced in TypeScript 5.7; our dependency requires at least 5.9.3 and the lockfile pins the installed version. See [TypeScript import rewriting](https://www.typescriptlang.org/tsconfig/rewriteRelativeImportExtensions.html).
 
-The test command uses `tsx`, which resolves these imports while executing TypeScript source directly. Production startup runs compiled JavaScript.
+The demo itself uses `.js` source imports, which are also valid with NodeNext. The new configuration supports the preference for `.ts` imports while keeping native Node ESM output. Node still requires explicit relative import extensions; switching to bundler resolution alone would not make extensionless output work with `node dist/server.js`.
+
+`verbatimModuleSyntax` requires type-only imports to be marked explicitly, and `noEmitOnError` prevents a failing build from emitting new JavaScript. Strict checking and `noUncheckedIndexedAccess` remain enabled.
+
+The test command and `npm run dev` use `tsx` to execute TypeScript source. Production startup runs compiled JavaScript.
 
 ## Contract and verification
 

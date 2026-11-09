@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { check, currencies, loadLimits } from '../src/rules.js';
-import { buildApp } from '../src/app.js';
+import { check, currencies, loadLimits } from '../src/rules.ts';
+import { buildApp } from '../src/app.ts';
 
 const limits = { EUR: 100, USD: 200, HUF: 300 };
 test('payments and refunds support every currency including exact boundaries', () => {
