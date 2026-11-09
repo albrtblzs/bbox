@@ -1,9 +1,17 @@
-import Fastify from 'fastify';
-import { check, defaultLimits, type Limits } from './rules.js';
+import Fastify, { type FastifyPluginAsync } from 'fastify';
+import { defaultLimits, type Limits } from './config.ts';
+import { createRoutes } from './routes.ts';
+
+interface ApplicationOptions {
+  limits: Limits;
+}
+
+export const application: FastifyPluginAsync<ApplicationOptions> = async (app, options) => {
+  app.register(createRoutes(options.limits));
+};
 
 export function buildApp(limits: Limits = defaultLimits) {
   const app = Fastify({ logger: true });
-  app.get('/health', async () => ({ status: 'ok' }));
-  app.post('/validate', async request => check(request.body, limits));
+  app.register(application, { limits: { ...limits } });
   return app;
 }

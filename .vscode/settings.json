@@ -1,0 +1,12 @@
+{
+  "typescript.tsdk": "validator/node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "[json]": {
+    "files.insertFinalNewline": true,
+    "files.trimFinalNewlines": false
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  }
+}

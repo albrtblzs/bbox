@@ -1,1 +1,23 @@
-{"name":"ledger-validator","private":true,"type":"module","scripts":{"build":"tsc","start":"node dist/server.js","test":"tsx --test test/*.test.ts","typecheck":"tsc -p tsconfig.test.json"},"dependencies":{"fastify":"^5.0.0"},"devDependencies":{"@types/node":"^22.0.0","tsx":"^4.0.0","typescript":"^5.0.0"}}
+{
+  "name": "ledger-validator",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/server.ts",
+    "start": "node dist/server.js",
+    "test": "tsx --test test/*.test.ts",
+    "typecheck": "tsc -p tsconfig.test.json",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "dependencies": {
+    "fastify": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "prettier": "3.9.10",
+    "tsx": "^4.0.0",
+    "typescript": "^5.9.3"
+  }
+}
