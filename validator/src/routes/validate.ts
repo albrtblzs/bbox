@@ -6,5 +6,5 @@ interface ValidationOptions {
 }
 
 export const validationRoutes: FastifyPluginAsync<ValidationOptions> = async (app, options) => {
-  app.post<{ Body: unknown }>('/validate', async request => check(request.body, options.limits));
+  app.post<{ Body: unknown }>('/validate', async (request) => check(request.body, options.limits));
 };

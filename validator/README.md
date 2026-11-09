@@ -43,12 +43,28 @@ The demo itself uses `.js` source imports, which are also valid with NodeNext. T
 
 The test command and `npm run dev` use `tsx` to execute TypeScript source. Production startup runs compiled JavaScript.
 
+## Editor setup and formatting
+
+Install dependencies locally as well as in Docker so VS Code can resolve Fastify, Node types, and the project's TypeScript version:
+
+```sh
+cd validator
+npm ci
+npm run format
+npm run format:check
+```
+
+Use Node 22 for development, matching the Docker image. In VS Code, install the recommended Prettier extension and choose **TypeScript: Select TypeScript Version → Use Workspace Version** if prompted. Workspace settings enable TypeScript formatting on save. Prettier handles layout; `npm run typecheck` checks types. See [Prettier installation](https://prettier.io/docs/install).
+
+Git's `M` means a tracked file differs from the local commit; `U` means a file is untracked. These badges are separate from diagnostics and formatting. Commits created remotely must be fetched and synchronized before the local checkout recognizes them. Dependencies stay ignored and must not be committed.
+
 ## Contract and verification
 
 The refactor preserves `GET /health` and `POST /validate`, including HTTP 200 approval/rejection decisions. Laravel still owns balance checks and all financial writes. No database or frontend is added here.
 
 ```sh
 npm test
+npm run format:check
 npm run typecheck
 npm run build
 ```

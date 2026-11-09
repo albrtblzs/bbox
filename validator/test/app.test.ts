@@ -8,5 +8,7 @@ test('service exposes its health endpoint', async () => {
     const response = await app.inject('/health');
     assert.equal(response.statusCode, 200);
     assert.deepEqual(response.json(), { status: 'ok' });
-  } finally { await app.close(); }
+  } finally {
+    await app.close();
+  }
 });

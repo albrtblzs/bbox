@@ -20,8 +20,9 @@ jobs:
         run: docker compose exec -T backend php artisan test
       - name: PHP style
         run: docker compose exec -T backend vendor/bin/pint --test app bootstrap/app.php bootstrap/providers.php routes tests database/migrations
-      - name: Validator tests, types and build
+      - name: Validator formatting, tests, types and build
         run: |
+          docker compose exec -T validator npm run format:check
           docker compose exec -T validator npm test
           docker compose exec -T validator npm run typecheck
           docker compose exec -T validator npm run build
