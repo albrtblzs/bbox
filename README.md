@@ -138,7 +138,8 @@ sequenceDiagram
         Validator-->>API: Approval or rejection
         Note over API,DB: On approval, BEGIN and lock merchant
         API->>DB: Recheck key and available balance
-        API->>DB: Insert transaction and update balance; COMMIT
+        API->>DB: Insert transaction and update balance
+        API->>DB: COMMIT
         API-->>Client: 201 with balance_after
     end
 ```
