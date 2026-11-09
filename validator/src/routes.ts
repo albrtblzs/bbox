@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
-import type { Limits } from './rules.ts';
+import type { Limits } from './config.ts';
 import { healthRoutes } from './routes/health.ts';
 import { validationRoutes } from './routes/validate.ts';
 

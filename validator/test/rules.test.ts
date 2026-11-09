@@ -1,9 +1,33 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { check, currencies, loadLimits } from '../src/rules.ts';
+import { check, checkAmountLimit } from '../src/rules.ts';
+import { loadLimits } from '../src/config.ts';
+import { currencies, parseTransaction } from '../src/transaction-input.ts';
 import { buildApp } from '../src/app.ts';
 
 const limits = { EUR: 100, USD: 200, HUF: 300 };
+
+test('input parsing returns typed values without applying business limits', () => {
+  assert.deepEqual(parseTransaction({ type: 'refund', amount: 101, currency: 'EUR' }), {
+    valid: true,
+    transaction: { type: 'refund', amount: 101, currency: 'EUR' },
+  });
+  assert.deepEqual(checkAmountLimit({ type: 'refund', amount: 101, currency: 'EUR' }, limits), {
+    approved: false,
+    reason: 'AMOUNT_LIMIT_EXCEEDED',
+  });
+});
+
+test('multiple invalid fields preserve rejection priority before amount limits', () => {
+  for (const [input, reason] of [
+    [{}, 'INVALID_TYPE'],
+    [{ type: 'other', amount: '1', currency: 'GBP' }, 'INVALID_TYPE'],
+    [{ type: 'payment', amount: '1', currency: 'GBP' }, 'INVALID_AMOUNT'],
+    [{ type: 'payment', amount: 101, currency: 'GBP' }, 'UNSUPPORTED_CURRENCY'],
+  ] as const) {
+    assert.deepEqual(check(input, limits), { approved: false, reason });
+  }
+});
 test('payments and refunds support every currency including exact boundaries', () => {
   for (const currency of currencies)
     for (const type of ['payment', 'refund']) {

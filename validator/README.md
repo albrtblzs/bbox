@@ -13,7 +13,11 @@ server.ts -> buildApp(limits) -> application plugin
 - `app.ts` exports `buildApp`, the application factory, and `application`, a typed Fastify application plugin. Each factory call creates a fresh Fastify instance and supplies configuration to the application plugin without opening a port.
 - `routes.ts` exports `createRoutes`, a route factory returning a Fastify plugin. It captures a copy of the supplied limits and registers the endpoint plugins.
 - `routes/health.ts` registers `/health`; `routes/validate.ts` registers `/validate` and passes the unknown request body to the rules.
-- `rules.ts` contains configuration validation and the ordinary `check` function. It knows nothing about HTTP servers or databases.
+- `config.ts` owns default limits, their type, and environment configuration validation.
+- `transaction-input.ts` checks unknown input and returns a typed transaction or an input rejection. It owns the supported currencies and does not apply business limits.
+- `rules.ts` coordinates input parsing through `check`, then applies `checkAmountLimit` to typed data. The business rule needs no currency assertions and knows nothing about HTTP or environment variables.
+
+The validation flow is `unknown body -> parseTransaction -> TransactionInput -> checkAmountLimit -> Decision`. Rejection priority remains request shape, type, amount, currency, then business limit. Amount strings are rejected without coercion. `Decision` is a discriminated union, so approval and rejection reasons cannot be mixed accidentally in typed code.
 
 A factory is a function that creates an object or function with its dependencies supplied by the caller. Here, limits are passed explicitly rather than read from the environment inside request handlers. Tests can construct independently configured apps and use `app.inject()` without listening on a network port. Fastify loads registered plugins when `inject()`, `ready()`, or `listen()` is called. See the [Fastify plugin guide](https://fastify.dev/docs/latest/Guides/Plugins-Guide/).
 

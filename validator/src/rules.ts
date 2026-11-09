@@ -1,34 +1,27 @@
-export const currencies = ['EUR', 'USD', 'HUF'] as const;
-export type Currency = (typeof currencies)[number];
-export type Limits = Record<Currency, number>;
-export type Decision = { approved: boolean; reason: string };
-export const defaultLimits: Limits = { EUR: 1_000_000, USD: 1_000_000, HUF: 1_000_000 };
+import type { Limits } from './config.ts';
+import {
+  parseTransaction,
+  type InputRejection,
+  type TransactionInput,
+} from './transaction-input.ts';
 
-export function loadLimits(env: NodeJS.ProcessEnv): Limits {
-  const limits = { ...defaultLimits };
-  for (const currency of currencies) {
-    const raw = env[`MAX_AMOUNT_${currency}`];
-    if (raw !== undefined && !/^[1-9]\d*$/.test(raw))
-      throw new Error(`Invalid limit for ${currency}`);
-    const limit = raw === undefined ? defaultLimits[currency] : Number(raw);
-    if (!Number.isSafeInteger(limit) || limit > 2_147_483_647)
-      throw new Error(`Invalid limit for ${currency}`);
-    limits[currency] = limit;
+export type Decision =
+  | { approved: true; reason: 'APPROVED' }
+  | { approved: false; reason: InputRejection | 'AMOUNT_LIMIT_EXCEEDED' };
+
+export function checkAmountLimit(transaction: TransactionInput, limits: Limits): Decision {
+  if (transaction.amount > limits[transaction.currency]) {
+    return { approved: false, reason: 'AMOUNT_LIMIT_EXCEEDED' };
   }
-  return limits;
+
+  return { approved: true, reason: 'APPROVED' };
 }
 
 export function check(input: unknown, limits: Limits): Decision {
-  if (!input || typeof input !== 'object' || Array.isArray(input))
-    return { approved: false, reason: 'INVALID_REQUEST' };
-  const value = input as Record<string, unknown>;
-  if (value.type !== 'payment' && value.type !== 'refund')
-    return { approved: false, reason: 'INVALID_TYPE' };
-  if (typeof value.amount !== 'number' || !Number.isSafeInteger(value.amount) || value.amount <= 0)
-    return { approved: false, reason: 'INVALID_AMOUNT' };
-  if (typeof value.currency !== 'string' || !currencies.includes(value.currency as Currency))
-    return { approved: false, reason: 'UNSUPPORTED_CURRENCY' };
-  if (value.amount > limits[value.currency as Currency])
-    return { approved: false, reason: 'AMOUNT_LIMIT_EXCEEDED' };
-  return { approved: true, reason: 'APPROVED' };
+  const result = parseTransaction(input);
+  if (!result.valid) {
+    return { approved: false, reason: result.reason };
+  }
+
+  return checkAmountLimit(result.transaction, limits);
 }

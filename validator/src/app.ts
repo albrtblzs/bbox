@@ -1,5 +1,5 @@
 import Fastify, { type FastifyPluginAsync } from 'fastify';
-import { defaultLimits, type Limits } from './rules.ts';
+import { defaultLimits, type Limits } from './config.ts';
 import { createRoutes } from './routes.ts';
 
 interface ApplicationOptions {

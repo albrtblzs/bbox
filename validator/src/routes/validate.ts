@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
-import { check, type Limits } from '../rules.ts';
+import { check } from '../rules.ts';
+import type { Limits } from '../config.ts';
 
 interface ValidationOptions {
   limits: Limits;
