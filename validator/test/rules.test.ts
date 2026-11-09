@@ -33,3 +33,24 @@ test('HTTP validation returns boolean decisions without coercing amounts', async
     }
   } finally { await app.close(); }
 });
+
+test('application factories isolate limits and register health routes', async () => {
+  const configuration = { EUR: 100, USD: 200, HUF: 300 };
+  const first = buildApp(configuration);
+  const second = buildApp({ ...configuration, EUR: 50 });
+  configuration.EUR = 1;
+
+  try {
+    for (const app of [first, second]) {
+      const health = await app.inject({ method: 'GET', url: '/health' });
+      assert.equal(health.statusCode, 200);
+      assert.deepEqual(health.json(), { status: 'ok' });
+    }
+
+    const request = { method: 'POST' as const, url: '/validate', payload: { type: 'payment', amount: 75, currency: 'EUR' } };
+    assert.deepEqual((await first.inject(request)).json(), { approved: true, reason: 'APPROVED' });
+    assert.deepEqual((await second.inject(request)).json(), { approved: false, reason: 'AMOUNT_LIMIT_EXCEEDED' });
+  } finally {
+    await Promise.all([first.close(), second.close()]);
+  }
+});
